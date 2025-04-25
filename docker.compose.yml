@@ -1,0 +1,60 @@
+version: "3.8"
+
+services:
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+
+  ntopng:
+    image: ntop/ntopng:latest
+    ports:
+      - "3001:3000"
+    environment:
+      - NTOPNG_USER=admin
+  labdash:
+    container_name: lab-dash
+    image: ghcr.io/anthonygress/lab-dash:latest
+    privileged: true
+    ports:
+      - "2022:2022"
+    environment:
+      - SECRET=YOUR_SECRET_KEY  # Asenda see juhusliku stringiga JWT krüptimiseks
+    volumes:
+      - /sys:/sys:ro
+      - ./labdash-config:/config
+      - ./labdash-uploads:/app/public/uploads
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+
+
+  pihole:
+    image: pihole/pihole:latest
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "8081:80"
+    environment:
+      - DNS1=8.8.8.8
+      - DNS2=8.8.4.4
+    volumes:
+      - pihole_data:/etc/pihole
+      - dnsmasq_data:/etc/dnsmasq.d
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    restart: unless-stopped
+
+volumes:
+  grafana-data:
+  pihole_data:
+  dnsmasq_data:
